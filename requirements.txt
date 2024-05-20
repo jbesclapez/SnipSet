@@ -1,0 +1,6 @@
+Flask
+Flask-Security
+SQLAlchemy
+psycopg2-binary
+celery
+msal

@@ -1,0 +1,24 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@ladjs/consolidate": "1.0.3",
+    "@vuelidate/core": "2.0.3",
+    "autoprefixer": "^10.4.19",
+    "tailwindcss": "^3.4.3",
+    "vue": "3.4.27",
+    "vue-router": "4.3.2",
+    "vuex": "4.1.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "5.0.8",
+    "postcss": "^8.4.38",
+    "sass": "^1.77.2",
+    "sass-loader": "^14.2.1"
+  }
+}
