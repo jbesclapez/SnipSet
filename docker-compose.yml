@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:13
@@ -6,12 +8,13 @@ services:
       POSTGRES_USER: snipset_user
       POSTGRES_PASSWORD: snipset_your_password
     volumes:
-      - C:\Users\nicol\Nextcloud\Documents\Dockers\SnipSet\db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
     volumes:
       - ./backend:/app
     ports:
@@ -19,15 +22,24 @@ services:
     depends_on:
       - db
     environment:
-      FLASK_ENV: development
+      FLASK_DEBUG: 1
       FLASK_APP: server.py
       DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
     volumes:
       - ./frontend:/app
     ports:
       - "43080:8080"
     depends_on:
       - backend
+
+  # Optional: If you want to run Swagger UI separately, you can add this service.
+  web:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "8081:8080"
+    environment:
+      SWAGGER_JSON: http://localhost:5000/swagger.json
