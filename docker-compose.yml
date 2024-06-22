@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: snipset_db
+      POSTGRES_USER: snipset_user
+      POSTGRES_PASSWORD: snipset_your_password
+    volumes:
+      - C:\Users\nicol\Nextcloud\Documents\Dockers\SnipSet\db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: server.py
+      DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "43080:8080"
+    depends_on:
+      - backend

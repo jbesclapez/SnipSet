@@ -1,0 +1,23 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_restful import Api
+import os
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://snipset_user:snipset_your_password@db:5432/snipset_db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+api = Api(app)
+
+# Import models to ensure they are registered with SQLAlchemy
+from app import models
+
+@app.route('/')
+def hello_world():
+    return 'Hello, SnipSet!'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0')
