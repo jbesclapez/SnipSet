@@ -25,6 +25,10 @@ services:
       FLASK_DEBUG: 1
       FLASK_APP: server.py
       DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin_password
+      RECAPTCHA_SITE_KEY: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      RECAPTCHA_SECRET_KEY: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
 
   frontend:
     build:
@@ -32,11 +36,10 @@ services:
     volumes:
       - ./frontend:/app
     ports:
-      - "43080:8080"
+      - "8080:8080"
     depends_on:
       - backend
 
-  # Optional: If you want to run Swagger UI separately, you can add this service.
   web:
     image: swaggerapi/swagger-ui
     ports:
