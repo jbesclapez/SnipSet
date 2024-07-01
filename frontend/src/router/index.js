@@ -2,6 +2,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
 import Signup from '../views/Signup.vue';
+import CreateAccount from '../views/CreateAccount.vue';
+import CreateAccountWithEmail from '../views/CreateAccountWithEmail.vue';
 
 const routes = [
   {
@@ -13,6 +15,16 @@ const routes = [
     path: '/signup',
     name: 'Signup',
     component: Signup,
+  },
+  {
+    path: '/create-account',
+    name: 'CreateAccount',
+    component: CreateAccount,
+  },
+  {
+    path: '/create-account-email',
+    name: 'CreateAccountWithEmail',
+    component: CreateAccountWithEmail,
   },
   {
     path: '/',

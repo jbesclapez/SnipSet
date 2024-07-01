@@ -20,10 +20,6 @@
             </div>
             <div class="input-underline"></div>
           </div>
-          <!-- Comment out the reCAPTCHA placeholder for now -->
-          <!-- <div class="recaptcha-container">
-            <VueReCaptcha @verify="onVerify" />
-          </div> -->
           <button :disabled="!isEmailAndPasswordFilled" type="submit" class="login-button">LOG IN</button>
         </form>
       </div>
@@ -49,30 +45,35 @@
           <img src="@/assets/facebook-logo.png" alt="Facebook" class="social-icon" />
           <span>Continue with Facebook</span>
         </button>
-        <button class="create-account-button">CREATE ACCOUNT</button>
+        <button @click="goToCreateAccount" class="create-account-button">CREATE ACCOUNT</button>
       </div>
     </div>
     <a href="#" class="forgot-password">CAN'T LOG IN?</a>
     <div class="footer">
       <p>Secure Login with reCAPTCHA subject to Google <a href="https://www.google.com/intl/en/policies/terms">Terms</a> & <a href="https://www.google.com/intl/en/policies/privacy">Privacy</a></p>
     </div>
+
+    <div v-if="showErrorModal" class="error-modal">
+      <div class="modal-content">
+        <img src="@/assets/Error_Login.png" alt="Error" class="modal-error-image" />
+        <h2>Oops! Wrong Password</h2>
+        <p>It seems like your keyboard might be playing tricks on you</p>
+        <button @click="closeErrorModal" class="modal-button">Retry without boxing gloves on</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-// import { VueReCaptcha } from 'vue-recaptcha-v3';
+import axios from 'axios';
 
 export default {
-  components: {
-    // VueReCaptcha,
-  },
   data() {
     return {
       email: '',
       password: '',
-      // recaptchaVerified: false,
       passwordFieldType: 'password',
-      // recaptchaToken: ''
+      showErrorModal: false,
     };
   },
   computed: {
@@ -82,36 +83,30 @@ export default {
   },
   methods: {
     async login() {
-      // Temporarily bypass reCAPTCHA verification
       try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: this.email,
-            password: this.password,
-            // recaptchaToken: this.recaptchaToken,
-          }),
+        const response = await axios.post('http://localhost:5000/api/login', {
+          email: this.email,
+          password: this.password,
         });
-        const result = await response.json();
-        if (response.ok) {
+        if (response.data.message === "Login succeeded") {
           // Redirect to the main homepage of SnipSet
-          window.location.href = '/homepage';
+          this.$router.push('/homepage');
         } else {
-          alert(result.message);
+          this.showErrorModal = true;
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('An error occurred during login.');
+        this.showErrorModal = true;
       }
     },
-    // onVerify(token) {
-    //   this.recaptchaVerified = true;
-    //   this.recaptchaToken = token;
-    //   console.log('reCAPTCHA token:', token); // Optional: Handle token if needed
-    // },
     togglePasswordVisibility() {
       this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
+    },
+    closeErrorModal() {
+      this.showErrorModal = false;
+    },
+    goToCreateAccount() {
+      this.$router.push('/create-account');
     }
   }
 };
@@ -136,6 +131,7 @@ body {
   height: 100vh;
   background-color: #fff;
   font-family: var(--main-font-family);
+  position: relative;
 }
 .logo {
   width: 50px;
@@ -205,9 +201,6 @@ h2 {
 .toggle-password img {
   width: 20px;
   height: 20px;
-}
-.recaptcha-container {
-  margin-bottom: 20px;
 }
 .login-button, .create-account-button {
   width: 100%;
@@ -312,5 +305,42 @@ h2 {
 .footer a {
   color: grey;
   text-decoration: underline;
+}
+.error-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999; /* Ensure the modal is above other content */
+}
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+.modal-error-image {
+  width: 100px; /* Adjust the size as needed */
+  margin-bottom: 20px;
+}
+.modal-button {
+  width: 100%;
+  padding: 15px; /* Match the login button height */
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 14px;
+  margin-top: 20px;
 }
 </style>
