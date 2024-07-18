@@ -1,0 +1,16 @@
+Flask==2.2.5
+Flask-SQLAlchemy==3.1.1
+Flask-Security==3.0.0
+psycopg2-binary==2.9.9
+Flask-Migrate==4.0.7
+Flask-RESTful==0.3.10
+Flask-CORS==4.0.1
+Flask-Script==2.0.6
+python-dotenv==1.0.1
+elasticsearch==8.14.0
+celery==5.4.0
+redis==5.0.6
+sentry-sdk==2.6.0
+msal==1.29.0
+Flask-Babel==3.0.0
+flask-restx==1.1.0
