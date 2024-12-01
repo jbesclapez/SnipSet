@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# Virtual environment
+venv/
+
+# Flask specific
+instance/
+.webassets-cache
+
+# Pytest
+.cache
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pyenv
+.python-version
+
+# pipenv
+pipenv.lock
+
+# celery
+celerybeat-schedule
+
+# dotenv
+.env

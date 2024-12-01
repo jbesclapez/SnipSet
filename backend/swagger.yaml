@@ -1,0 +1,119 @@
+openapi: 3.0.0
+info:
+  title: SnipSet API
+  version: 1.0.0
+paths:
+  /login:
+    post:
+      summary: User login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful login
+  /signup:
+    post:
+      summary: User registration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+                firstname:
+                  type: string
+      responses:
+        '201':
+          description: User created
+  /snippets:
+    get:
+      summary: Get all snippets
+      responses:
+        '200':
+          description: Successful operation
+    post:
+      summary: Create a new snippet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                content:
+                  type: string
+                type:
+                  type: string
+                subtype:
+                  type: string
+                category_id:
+                  type: integer
+                subcategory_id:
+                  type: integer
+                public:
+                  type: boolean
+                user_id:
+                  type: integer
+                language:
+                  type: string
+      responses:
+        '201':
+          description: Snippet created
+  /snippets/{id}:
+    get:
+      summary: Get a specific snippet by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+    put:
+      summary: Update a snippet by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Snippet updated
+    delete:
+      summary: Delete a snippet by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Snippet deleted
