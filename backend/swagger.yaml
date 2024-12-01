@@ -1,16 +1,25 @@
 openapi: 3.0.0
 info:
   title: SnipSet API
+  description: API documentation for SnipSet
   version: 1.0.0
+servers:
+  - url: http://localhost:5000
+
 paths:
-  /login:
+  /api/auth/login:
     post:
-      summary: User login
+      summary: Login
+      description: Authenticates a user and returns a token.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
@@ -18,15 +27,31 @@ paths:
                   type: string
       responses:
         '200':
-          description: Successful login
-  /signup:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Unauthorized
+
+  /api/auth/signup:
     post:
-      summary: User registration
+      summary: Signup
+      description: Registers a new user.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - username
+                - email
+                - password
               properties:
                 username:
                   type: string
@@ -40,80 +65,317 @@ paths:
                   type: string
       responses:
         '201':
-          description: User created
-  /snippets:
+          description: User created successfully
+        '400':
+          description: Invalid input
+
+  /api/auth/logout:
     get:
-      summary: Get all snippets
+      summary: Logout
+      description: Logs out the current user session.
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          description: Unauthorized
+
+  /api/users:
+    get:
+      summary: Get All Users
+      description: Retrieves a list of all users.
       responses:
         '200':
-          description: Successful operation
+          description: A list of users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    email:
+                      type: string
+                    name:
+                      type: string
     post:
-      summary: Create a new snippet
+      summary: Create User
+      description: Creates a new user.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - username
+                - email
+                - password
               properties:
-                title:
+                username:
                   type: string
-                description:
+                email:
                   type: string
-                content:
+                password:
                   type: string
-                type:
+                name:
                   type: string
-                subtype:
+                firstname:
                   type: string
-                category_id:
-                  type: integer
-                subcategory_id:
-                  type: integer
-                public:
-                  type: boolean
-                user_id:
-                  type: integer
-                language:
+                role:
                   type: string
       responses:
         '201':
-          description: Snippet created
-  /snippets/{id}:
+          description: User created successfully
+        '400':
+          description: Invalid input
+
+  /api/users/{user_id}:
     get:
-      summary: Get a specific snippet by ID
+      summary: Get User by ID
+      description: Retrieves a user by ID.
       parameters:
-        - in: path
-          name: id
+        - name: user_id
+          in: path
           required: true
           schema:
             type: integer
       responses:
         '200':
-          description: Successful operation
-    put:
-      summary: Update a snippet by ID
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200':
-          description: Snippet updated
+          description: User details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  email:
+                    type: string
+                  name:
+                    type: string
+        '404':
+          description: User not found
     delete:
-      summary: Delete a snippet by ID
+      summary: Delete User
+      description: Deletes a user by ID.
       parameters:
-        - in: path
-          name: id
+        - name: user_id
+          in: path
           required: true
           schema:
             type: integer
       responses:
         '204':
-          description: Snippet deleted
+          description: User deleted successfully
+        '404':
+          description: User not found
+
+  /api/users/{user_id}/profile:
+    get:
+      summary: Get User Profile
+      description: Retrieves the profile of a user by ID.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bio:
+                    type: string
+                  website_url:
+                    type: string
+        '404':
+          description: User not found
+    put:
+      summary: Update User Profile
+      description: Updates the profile of a user by ID.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio:
+                  type: string
+                website_url:
+                  type: string
+      responses:
+        '200':
+          description: User profile updated successfully
+        '404':
+          description: User not found
+
+  /api/categories:
+    get:
+      summary: Get All Categories
+      description: Retrieves a list of all categories.
+      responses:
+        '200':
+          description: A list of categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+    post:
+      summary: Create Category
+      description: Creates a new category.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Category created successfully
+        '400':
+          description: Invalid input
+
+  /api/categories/{category_id}:
+    put:
+      summary: Update Category
+      description: Updates a category by ID.
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Category updated successfully
+        '404':
+          description: Category not found
+    delete:
+      summary: Delete Category
+      description: Deletes a category by ID.
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Category deleted successfully
+        '404':
+          description: Category not found
+
+  /api/tags:
+    get:
+      summary: Get All Tags
+      description: Retrieves a list of all tags.
+      responses:
+        '200':
+          description: A list of tags.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+    post:
+      summary: Create Tag
+      description: Creates a new tag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Tag created successfully
+        '400':
+          description: Invalid input
+
+  /api/tags/{tag_id}:
+    put:
+      summary: Update Tag
+      description: Updates a tag by ID.
+      parameters:
+        - name: tag_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Tag updated successfully
+        '404':
+          description: Tag not found
+    delete:
+      summary: Delete Tag
+      description: Deletes a tag by ID.
+      parameters:
+        - name: tag_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Tag deleted successfully
+        '404':
+          description: Tag not found
