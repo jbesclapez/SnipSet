@@ -6,8 +6,6 @@ class Snippet(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     content = db.Column(db.Text, nullable=False)
-    type = db.Column(db.String(50), nullable=False)
-    subtype = db.Column(db.String(50), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategories.id'))
     public = db.Column(db.Boolean, default=False)
@@ -27,8 +25,6 @@ class Snippet(db.Model):
             'title': self.title,
             'description': self.description,
             'content': self.content,
-            'type': self.type,
-            'subtype': self.subtype,
             'category_id': self.category_id,
             'subcategory_id': self.subcategory_id,
             'public': self.public,

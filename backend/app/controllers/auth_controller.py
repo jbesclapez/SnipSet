@@ -31,7 +31,7 @@ class Signup(Resource):
         data = request.get_json()
         username = data['username']
         email = data['email']
-        password = generate_password_hash(data['password'])
+        password = data['password']  # No need to hash here; the model handles it
         name = data['name']
         firstname = data['firstname']
         
@@ -46,7 +46,16 @@ class Signup(Resource):
             return {"message": "Email already exists"}, 409
 
         try:
-            user_datastore.create_user(username=username, email=email, password=password, name=name, firstname=firstname, roles=[role], role=role.name)
+            new_user = user_datastore.create_user(
+                username=username,
+                email=email,
+                password=password,
+                name=name,
+                firstname=firstname,
+                roles=[role],
+                role=role.name
+            )
+            db.session.add(new_user)  # Add the user to the session
             db.session.commit()
             return {"message": "User created"}, 201
         except SQLAlchemyError as e:
@@ -54,6 +63,8 @@ class Signup(Resource):
             return {"message": "Error creating user", "error": str(e)}, 500
         except Exception as e:
             return {"message": "An unexpected error occurred", "error": str(e)}, 500
+
+
 
 @auth_api.route('/login')
 class Login(Resource):
@@ -64,13 +75,14 @@ class Login(Resource):
             user = User.query.filter_by(email=data['email']).first()
             if user and check_password_hash(user.password, data['password']):
                 session['user_id'] = user.id
-                return jsonify(message="Login succeeded")
+                return {"message": "Login succeeded"}, 200
             else:
-                return jsonify(message="Invalid credentials"), 401
+                return {"message": "Invalid credentials"}, 401
         except SQLAlchemyError as e:
             return {"message": "Database error", "error": str(e)}, 500
         except Exception as e:
             return {"message": "An unexpected error occurred", "error": str(e)}, 500
+
 
 @auth_api.route('/logout')
 class Logout(Resource):

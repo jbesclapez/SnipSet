@@ -9,37 +9,55 @@ def create_snippet():
     title = data.get('title')
     description = data.get('description')
     content = data.get('content')
-    type = data.get('type')
-    subtype = data.get('subtype')
     category_id = data.get('category_id')
     subcategory_id = data.get('subcategory_id')
     public = data.get('public', False)
     user_id = data.get('user_id')
     language = data.get('language')
+    tag_names = data.get('tags', [])
 
-    if not all([title, description, content, type, subtype, category_id, user_id, language]):
-        return jsonify({"error": "All fields are required"}), 400
+    # Validate required fields
+    if not all([title, description, content, category_id, user_id, language]):
+        return jsonify({"error": "All required fields must be provided"}), 400
 
     try:
+        # Create the snippet object
         new_snippet = Snippet(
             title=title,
             description=description,
             content=content,
-            type=type,
-            subtype=subtype,
             category_id=category_id,
             subcategory_id=subcategory_id,
             public=public,
             user_id=user_id,
             language=language
         )
+
+        # Process tags
+        tags = []
+        for tag_name in tag_names:
+            # Retrieve or create the Tag object
+            tag = Tag.query.filter_by(name=tag_name).first()
+            if not tag:
+                tag = Tag(name=tag_name)
+                db.session.add(tag)
+                db.session.flush()  # Flush to get the tag's ID before using it
+            tags.append(tag)
+
+        # Add tags to the snippet
+        new_snippet.tags = tags
+
+        # Save the snippet
         db.session.add(new_snippet)
         db.session.commit()
         return jsonify(new_snippet.to_dict()), 201
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({"error": str(e.orig)}), 500
+        return jsonify({"error": str(e.orig) if e.orig else str(e)}), 500
 
+
+
+    
 def get_snippets():
     try:
         snippets = Snippet.query.all()

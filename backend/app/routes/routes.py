@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models import User, Snippet
-from app.controllers.auth_controller import auth_api
+from app.controllers.auth_controller import auth_bp
 from app.controllers.category_controller import create_category, get_categories, delete_category, update_category
 from app.controllers.subcategory_controller import create_subcategory, get_subcategories, delete_subcategory, get_subcategories_by_category, update_subcategory
 from app.controllers.user_controller import create_user, get_users, get_user, update_user, delete_user, get_user_profile, update_user_profile
@@ -11,9 +11,8 @@ from app.controllers.query_controller import query_bp
 
 api = Blueprint('api', __name__)
 
-@api.route('/login', methods=['POST'])
-def login():
-    return auth_api.resources['Login'].dispatch_request()
+# Register the authentication blueprint
+api.register_blueprint(auth_bp, url_prefix='/auth')
 
 @api.route('/signup', methods=['POST'])
 def signup():
@@ -31,14 +30,6 @@ def change_password():
 def get_snippets():
     snippets = Snippet.query.all()
     return jsonify([snippet.to_dict() for snippet in snippets])
-
-@api.route('/snippets', methods=['POST'])
-def create_snippet():
-    data = request.json
-    snippet = Snippet(**data)
-    db.session.add(snippet)
-    db.session.commit()
-    return jsonify(snippet.to_dict()), 201
 
 @api.route('/snippets/<int:id>', methods=['GET'])
 def get_snippet(id):

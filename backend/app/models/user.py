@@ -1,9 +1,11 @@
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.ext.hybrid import hybrid_property
 from app import db
 from flask_security import UserMixin, RoleMixin
 from sqlalchemy import CheckConstraint
 
-# Association table for the many-to-many relationship between users and roles
-roles_users = db.Table('roles_users',
+roles_users = db.Table(
+    'roles_users',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
     db.Column('role_id', db.Integer, db.ForeignKey('roles.id'))
 )
@@ -19,7 +21,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    _password = db.Column("password", db.String(255), nullable=False)  # Backing column
     name = db.Column(db.String(255), nullable=False)
     firstname = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), nullable=False)
@@ -31,6 +33,17 @@ class User(db.Model, UserMixin):
     __table_args__ = (
         CheckConstraint(role.in_(['Administrator', 'Reviewer', 'End User']), name='check_role'),
     )
+
+    @hybrid_property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, plaintext_password):
+        self._password = generate_password_hash(plaintext_password)
+
+    def check_password(self, plaintext_password):
+        return check_password_hash(self._password, plaintext_password)
 
     def to_dict(self):
         return {
@@ -53,7 +66,6 @@ class Profile(db.Model):
     avatar_url = db.Column(db.String(255))
     website_url = db.Column(db.String(255))
 
-    # Relationship
     user = db.relationship('User', backref=db.backref('profile', uselist=False, cascade="all, delete-orphan"))
 
     def to_dict(self):
