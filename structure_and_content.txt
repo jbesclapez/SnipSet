@@ -1,0 +1,2196 @@
+﻿C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet
+backend
+  |---app
+    |---config
+      |---db_config.py
+    |---controllers
+      |---auth_controller.py
+      |---category_controller.py
+      |---query_controller.py
+      |---snippet_controller.py
+      |---subcategory_controller.py
+      |---tag_controller.py
+      |---user_controller.py
+    |---database
+      |---init_db.py
+    |---models
+      |---category.py
+      |---models.py
+      |---notification.py
+      |---snippet.py
+      |---subcategory.py
+      |---tag.py
+      |---user.py
+      |---__init__.py
+    |---routes
+      |---routes.py
+    |---error_handlers.py
+    |---__init__.py
+  |---migrations
+    |---versions
+      |---55569e580c1b_manual_initial_migration.py
+      |---bf1e42552369_add_username_column_to_users_table.py
+    |---alembic.ini
+    |---env.py
+    |---README
+    |---script.py.mako
+  |---.gitignore
+  |---directory_structure.txt
+  |---Dockerfile
+  |---entrypoint.sh
+  |---list_directory_structure_to_file.ps1
+  |---migrate.py
+  |---package.json
+  |---README.md
+  |---requirements - Copy.txt
+  |---requirements.txt
+  |---server.py
+  |---swagger.yaml
+.gitignore
+directory_structure.txt
+docker-compose - Copy.yml
+docker-compose.yml
+LICENSE
+list_directory_structure_to_file.ps1
+package-lock.json
+package.json
+Postman.json
+README.md
+SnipSet API.postman_collection.json
+structure_and_content.ps1
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\docker-compose - Copy.yml
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: snipset_db
+      POSTGRES_USER: snipset_user
+      POSTGRES_PASSWORD: snipset_your_password
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      FLASK_DEBUG: 1
+      FLASK_APP: app
+      DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin_password
+      RECAPTCHA_SITE_KEY: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      RECAPTCHA_SECRET_KEY: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "8080:80"
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\docker-compose.yml
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: snipset_db
+      POSTGRES_USER: snipset_user
+      POSTGRES_PASSWORD: snipset_your_password
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      FLASK_DEBUG: 1
+      FLASK_APP: app
+      DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin_password
+      RECAPTCHA_SITE_KEY: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      RECAPTCHA_SECRET_KEY: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\README.md
+# SnipSet
+Build a self-hosted snippet manager with user authentication, advanced search, and role-based access control. Manage Snippets and Business Rules with detailed categorization. Features include email/password and Azure SSO authentication. Utilize Docker for containerization, GitHub for version control, and VSCode for development.
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\Dockerfile
+# Use an official Python runtime as a parent image
+FROM python:3.9
+
+# Install netcat-openbsd for the entrypoint script
+RUN apt-get update && apt-get install -y netcat-openbsd
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Expose port 5000
+EXPOSE 5000
+
+# Define environment variable
+ENV FLASK_APP=app
+
+# Add this line to set PYTHONPATH
+ENV PYTHONPATH=/app
+
+# Use the entrypoint script to start the application
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\entrypoint.sh
+#!/bin/sh
+
+# Wait for the database to be ready
+echo "Waiting for PostgreSQL to be available..."
+while ! nc -z db 5432; do
+  sleep 1
+done
+
+echo "Applying database migrations..."
+flask db upgrade
+
+echo "Initializing the database..."
+python app/database/init_db.py
+
+echo "Starting Flask application..."
+exec flask run --host=0.0.0.0
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\migrate.py
+from flask import Flask
+from flask_migrate import Migrate
+from app import create_app, db
+
+app = create_app()
+migrate = Migrate(app, db)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\README.md
+# SnipSet Backend
+
+## Setup
+
+1. Build and run the Docker containers:
+
+    ```sh
+    docker-compose up --build
+    ```
+
+2. Initialize the database:
+
+    ```sh
+    docker-compose exec backend flask db init
+    docker-compose exec backend flask db migrate
+    docker-compose exec backend flask db upgrade
+    ```
+
+3. Access the application at `http://localhost:5000`
+
+## Folder Structure
+
+### backend
+The root directory for the backend of the application.
+
+- **app/**: Contains the main application code.
+  - **config/**: Configuration files for the application.
+    - `config.py`: Contains configuration settings such as database URI and secret keys.
+  - **models/**: Database models.
+    - `models.py`: Defines the SQLAlchemy models for the database schema.
+  - **controllers/**: Business logic and controller code (not yet included but should be added here).
+  - **routes/**: Contains the route definitions for the application.
+    - `routes.py`: Defines the API endpoints and links them to controller functions.
+  - `__init__.py`: Application factory to create and configure the Flask app.
+  
+- **.gitignore**: Specifies files and directories to be ignored by Git.
+- **directory_structure.txt**: A file listing the structure of the directory.
+- **docker-compose/**: Docker compose configuration files (optional).
+- **Dockerfile**: Instructions to build the Docker image for the backend service.
+- **list_directory_structure_to_file.ps1**: PowerShell script to list the directory structure.
+- **README.md**: Instructions and documentation for setting up and running the backend.
+- **requirements.txt**: Lists the Python dependencies needed to run the application.
+- **swagger.yaml**: API documentation file (if using Swagger for API documentation).
+- **migrate.py**: Manages the database migrations using Flask-Migrate.
+- **init_db.py**: Script to initialize the database and create tables with initial data.
+
+## Environment Variables
+
+- `DATABASE_URL`: Database connection string
+- `SECRET_KEY`: Secret key for session management
+- `SECURITY_PASSWORD_SALT`: Salt for password hashing
+- `RECAPTCHA_SITE_KEY`: Recaptcha site key
+- `RECAPTCHA_SECRET_KEY`: Recaptcha secret key
+
+## Running the Application
+
+### Docker Setup
+
+1. Build and run the Docker containers:
+
+    ```sh
+    docker-compose up --build
+    ```
+
+2. Initialize the database:
+
+    ```sh
+    docker-compose exec backend flask db init
+    docker-compose exec backend flask db migrate
+    docker-compose exec backend flask db upgrade
+    ```
+
+3. Access the application at `http://localhost:5000`
+
+### Manual Setup (Without Docker)
+
+1. Create a virtual environment and install dependencies:
+
+    ```sh
+    python -m venv venv
+    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    pip install -r requirements.txt
+    ```
+
+2. Set up environment variables in a `.env` file:
+
+    ```plaintext
+    DATABASE_URL=postgresql://snipset_user:snipset_your_password@localhost:5432/snipset_db
+    SECRET_KEY=your_secret_key
+    SECURITY_PASSWORD_SALT=your_password_salt
+    RECAPTCHA_SITE_KEY=your_recaptcha_site_key
+    RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
+    ```
+
+3. Initialize the database:
+
+    ```sh
+    flask db init
+    flask db migrate
+    flask db upgrade
+    ```
+
+4. Run the application:
+
+    ```sh
+    flask run
+    ```
+
+This README file provides a comprehensive guide to setting up and running the backend, as well as an explanation of the purpose of each folder and file in the backend directory structure.
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\server.py
+from app import create_app
+import logging
+import os
+import app.error_handlers  # Ensure this import is here to register the error handlers
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG if os.getenv('FLASK_ENV') == 'development' else logging.INFO)
+
+app = create_app()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0')
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\error_handlers.py
+from flask import jsonify
+from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.exceptions import HTTPException
+from . import db
+
+def register_error_handlers(app):
+    @app.errorhandler(404)
+    def resource_not_found(e):
+        return jsonify({"error": "Resource not found"}), 404
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        return jsonify({"error": "Bad request"}), 400
+
+    @app.errorhandler(SQLAlchemyError)
+    def handle_sqlalchemy_error(e):
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        if isinstance(e, HTTPException):
+            return jsonify({"error": e.description}), e.code
+        return jsonify({"error": "Internal server error"}), 500
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\__init__.py
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_cors import CORS
+from flask_babel import Babel
+from .config.db_config import Config  # Updated import to use db_config
+
+db = SQLAlchemy()
+migrate = Migrate()
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # Import and register models to ensure they are part of SQLAlchemy
+    from .models.models import (
+        User, Role, Category, Subcategory, Snippet, Tag,
+        SnippetTag, Comment, AuditLog, OAuthToken, FailedLogin,
+        Backup, AITrainingExport
+    )
+    
+    CORS(app)
+    Babel(app)
+
+    # Register blueprints
+    from .routes.routes import api
+    app.register_blueprint(api, url_prefix='/api')
+
+    return app
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\config\db_config.py
+import os
+
+class Config:
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')
+    SECURITY_PASSWORD_SALT = os.getenv('SECURITY_PASSWORD_SALT', 'salty')
+    RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_SITE_KEY')
+    RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_SECRET_KEY')
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\auth_controller.py
+from flask import Blueprint, request, jsonify, session
+from flask_restx import Api, Resource, fields
+from werkzeug.security import generate_password_hash, check_password_hash
+from app.models.user import User, Role
+from app import db
+from flask_security import SQLAlchemyUserDatastore
+from sqlalchemy.exc import SQLAlchemyError
+
+auth_bp = Blueprint('auth', __name__)
+auth_api = Api(auth_bp, version='1.0', title='Auth API', description='Authentication API', doc='/swagger/auth')
+
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+
+signup_model = auth_api.model('Signup', {
+    'username': fields.String(required=True, description='The username'),
+    'email': fields.String(required=True, description='The email'),
+    'password': fields.String(required=True, description='The password'),
+    'name': fields.String(required=True, description='The name'),
+    'firstname': fields.String(required=True, description='The firstname')
+})
+
+login_model = auth_api.model('Login', {
+    'email': fields.String(required=True, description='The email'),
+    'password': fields.String(required=True, description='The password')
+})
+
+@auth_api.route('/signup')
+class Signup(Resource):
+    @auth_api.expect(signup_model)
+    def post(self):
+        data = request.get_json()
+        username = data['username']
+        email = data['email']
+        password = data['password']  # No need to hash here; the model handles it
+        name = data['name']
+        firstname = data['firstname']
+        
+        role_name = 'End User'
+        role = user_datastore.find_role(role_name)
+        if not role:
+            role = user_datastore.create_role(name=role_name)
+
+        if User.query.filter_by(username=username).first():
+            return {"message": "Username already exists"}, 409
+        if User.query.filter_by(email=email).first():
+            return {"message": "Email already exists"}, 409
+
+        try:
+            new_user = user_datastore.create_user(
+                username=username,
+                email=email,
+                password=password,
+                name=name,
+                firstname=firstname,
+                roles=[role],
+                role=role.name
+            )
+            db.session.add(new_user)  # Add the user to the session
+            db.session.commit()
+            return {"message": "User created"}, 201
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return {"message": "Error creating user", "error": str(e)}, 500
+        except Exception as e:
+            return {"message": "An unexpected error occurred", "error": str(e)}, 500
+
+
+
+@auth_api.route('/login')
+class Login(Resource):
+    @auth_api.expect(login_model)
+    def post(self):
+        data = request.get_json()
+        try:
+            user = User.query.filter_by(email=data['email']).first()
+            if user and check_password_hash(user.password, data['password']):
+                session['user_id'] = user.id
+                return {"message": "Login succeeded"}, 200
+            else:
+                return {"message": "Invalid credentials"}, 401
+        except SQLAlchemyError as e:
+            return {"message": "Database error", "error": str(e)}, 500
+        except Exception as e:
+            return {"message": "An unexpected error occurred", "error": str(e)}, 500
+
+
+@auth_api.route('/logout')
+class Logout(Resource):
+    def get(self):
+        try:
+            if 'user_id' not in session:
+                return jsonify(message="User not logged in"), 400
+            session.clear()
+            return jsonify(message="Logout succeeded")
+        except KeyError:
+            return jsonify(message="User not logged in"), 400
+        except Exception as e:
+            return {"message": "An unexpected error occurred", "error": str(e)}, 500
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\category_controller.py
+from flask import request, jsonify
+from app import db
+from app.models.category import Category
+from sqlalchemy.exc import SQLAlchemyError
+
+def create_category():
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description')
+
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+
+    try:
+        new_category = Category(name=name, description=description)
+        db.session.add(new_category)
+        db.session.commit()
+        return jsonify(new_category.to_dict()), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def get_categories():
+    try:
+        categories = Category.query.all()
+        return jsonify([category.to_dict_with_subcategories() for category in categories])
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+    except Exception as e:
+        return jsonify({"error": "Internal server error"}), 500
+
+def delete_category(category_id):
+    try:
+        category = Category.query.get_or_404(category_id)
+        db.session.delete(category)
+        db.session.commit()
+        return jsonify({"message": f"Category '{category.name}' deleted successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+def update_category(category_id):
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description')
+
+    try:
+        category = Category.query.get_or_404(category_id)
+        if name:
+            category.name = name
+        if description:
+            category.description = description
+        db.session.commit()
+        return jsonify(category.to_dict()), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\query_controller.py
+# app/controllers/query_controller.py
+
+from flask import request, jsonify, Blueprint
+from app import db
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import text
+
+query_bp = Blueprint('query_bp', __name__)
+
+@query_bp.route('/', methods=['POST'])
+def execute_query():
+    data = request.get_json()
+    table_name = data.get('table_name')
+    sql_query = data.get('sql_query')
+
+    if not table_name or not sql_query:
+        return jsonify({"error": "Table name and SQL query are required"}), 400
+
+    try:
+        # Safely format the query
+        sql_query = text(sql_query.format(table_name=table_name))
+
+        result = db.session.execute(sql_query)
+        records = [dict(row) for row in result.mappings()]  # Correctly convert rows to dictionaries
+
+        return jsonify(records), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\snippet_controller.py
+from flask import request, jsonify
+from app import db
+from app.models.snippet import Snippet
+from app.models.tag import Tag
+from sqlalchemy.exc import SQLAlchemyError
+
+def create_snippet():
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description')
+    content = data.get('content')
+    category_id = data.get('category_id')
+    subcategory_id = data.get('subcategory_id')
+    public = data.get('public', False)
+    user_id = data.get('user_id')
+    language = data.get('language')
+    tag_names = data.get('tags', [])
+
+    # Validate required fields
+    if not all([title, description, content, category_id, user_id, language]):
+        return jsonify({"error": "All required fields must be provided"}), 400
+
+    try:
+        # Create the snippet object
+        new_snippet = Snippet(
+            title=title,
+            description=description,
+            content=content,
+            category_id=category_id,
+            subcategory_id=subcategory_id,
+            public=public,
+            user_id=user_id,
+            language=language
+        )
+
+        # Process tags
+        tags = []
+        for tag_name in tag_names:
+            # Retrieve or create the Tag object
+            tag = Tag.query.filter_by(name=tag_name).first()
+            if not tag:
+                tag = Tag(name=tag_name)
+                db.session.add(tag)
+                db.session.flush()  # Flush to get the tag's ID before using it
+            tags.append(tag)
+
+        # Add tags to the snippet
+        new_snippet.tags = tags
+
+        # Save the snippet
+        db.session.add(new_snippet)
+        db.session.commit()
+        return jsonify(new_snippet.to_dict()), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig) if e.orig else str(e)}), 500
+
+
+
+    
+def get_snippets():
+    try:
+        snippets = Snippet.query.all()
+        return jsonify([snippet.to_dict() for snippet in snippets])
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def get_snippet(snippet_id):
+    try:
+        snippet = Snippet.query.get_or_404(snippet_id)
+        return jsonify(snippet.to_dict())
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def update_snippet(snippet_id):
+    data = request.get_json()
+    try:
+        snippet = Snippet.query.get_or_404(snippet_id)
+        snippet.title = data.get('title', snippet.title)
+        snippet.description = data.get('description', snippet.description)
+        snippet.content = data.get('content', snippet.content)
+        snippet.type = data.get('type', snippet.type)
+        snippet.subtype = data.get('subtype', snippet.subtype)
+        snippet.category_id = data.get('category_id', snippet.category_id)
+        snippet.subcategory_id = data.get('subcategory_id', snippet.subcategory_id)
+        snippet.public = data.get('public', snippet.public)
+        snippet.language = data.get('language', snippet.language)
+        db.session.commit()
+        return jsonify(snippet.to_dict()), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def delete_snippet(snippet_id):
+    try:
+        snippet = Snippet.query.get_or_404(snippet_id)
+        db.session.delete(snippet)
+        db.session.commit()
+        return '', 204
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def associate_tags(snippet_id):
+    data = request.get_json()
+    tags = data.get('tags', [])
+
+    try:
+        snippet = Snippet.query.get_or_404(snippet_id)
+        snippet.tags = []
+
+        for tag_name in tags:
+            tag = Tag.query.filter_by(name=tag_name).first()
+            if not tag:
+                tag = Tag(name=tag_name)
+                db.session.add(tag)
+            snippet.tags.append(tag)
+
+        db.session.commit()
+        return jsonify({"message": "Tags associated successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def get_snippets_by_tag(tag_id):
+    try:
+        tag = Tag.query.get_or_404(tag_id)
+        snippets = [snippet.to_dict() for snippet in tag.snippets]
+        return jsonify(snippets), 200
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\subcategory_controller.py
+from flask import request, jsonify
+from app import db
+from app.models.subcategory import Subcategory
+from sqlalchemy.exc import SQLAlchemyError
+
+def create_subcategory():
+    data = request.get_json()
+    category_id = data.get('category_id')
+    name = data.get('name')
+    description = data.get('description')
+
+    if not category_id or not name:
+        return jsonify({"error": "Category ID and Name are required"}), 400
+
+    try:
+        new_subcategory = Subcategory(category_id=category_id, name=name, description=description)
+        db.session.add(new_subcategory)
+        db.session.commit()
+        return jsonify(new_subcategory.to_dict()), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def get_subcategories():
+    try:
+        subcategories = Subcategory.query.all()
+        return jsonify([subcategory.to_dict() for subcategory in subcategories])
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def delete_subcategory(subcategory_id):
+    try:
+        subcategory = Subcategory.query.get_or_404(subcategory_id)
+        db.session.delete(subcategory)
+        db.session.commit()
+        return jsonify({"message": f"Subcategory '{subcategory.name}' deleted successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+def get_subcategories_by_category(category_id):
+    try:
+        subcategories = Subcategory.query.filter_by(category_id=category_id).all()
+        return jsonify([subcategory.to_dict() for subcategory in subcategories])
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def update_subcategory(subcategory_id):
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description')
+
+    try:
+        subcategory = Subcategory.query.get_or_404(subcategory_id)
+        if name:
+            subcategory.name = name
+        if description:
+            subcategory.description = description
+        db.session.commit()
+        return jsonify(subcategory.to_dict()), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\tag_controller.py
+from flask import request, jsonify
+from app import db
+from app.models.tag import Tag
+from sqlalchemy.exc import SQLAlchemyError
+
+def create_tag():
+    data = request.get_json()
+    name = data.get('name')
+
+    if not name:
+        return jsonify({"error": "Tag name is required"}), 400
+
+    try:
+        new_tag = Tag(name=name)
+        db.session.add(new_tag)
+        db.session.commit()
+        return jsonify(new_tag.to_dict()), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def get_tags():
+    try:
+        tags = Tag.query.all()
+        return jsonify([tag.to_dict() for tag in tags])
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def update_tag(tag_id):
+    data = request.get_json()
+    name = data.get('name')
+
+    if not name:
+        return jsonify({"error": "Tag name is required"}), 400
+
+    try:
+        tag = Tag.query.get_or_404(tag_id)
+        tag.name = name
+        db.session.commit()
+        return jsonify(tag.to_dict()), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def delete_tag(tag_id):
+    try:
+        tag = Tag.query.get_or_404(tag_id)
+        db.session.delete(tag)
+        db.session.commit()
+        return jsonify({"message": f"Tag '{tag.name}' deleted successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\controllers\user_controller.py
+from flask import request, jsonify
+from app import db
+from app.models.user import User, Profile
+from sqlalchemy.exc import SQLAlchemyError
+
+def create_user():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+    firstname = data.get('firstname')
+    role = data.get('role')
+
+    if not all([username, email, password, name, firstname, role]):
+        return jsonify({"error": "All fields are required"}), 400
+
+    try:
+        new_user = User(
+            username=username,
+            email=email,
+            password=password,
+            name=name,
+            firstname=firstname,
+            role=role
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Create a profile for the new user
+        new_profile = Profile(user_id=new_user.id)
+        db.session.add(new_profile)
+        db.session.commit()
+
+        return jsonify(new_user.to_dict()), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+
+def get_users():
+    try:
+        users = User.query.all()
+        return jsonify([user.to_dict() for user in users])
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def get_user(user_id):
+    try:
+        user = User.query.get_or_404(user_id)
+        return jsonify(user.to_dict())
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def update_user(user_id):
+    data = request.get_json()
+    try:
+        user = User.query.get_or_404(user_id)
+        if 'username' in data:
+            user.username = data['username']
+        if 'email' in data:
+            user.email = data['email']
+        if 'password' in data:
+            user.password = data['password']
+        if 'name' in data:
+            user.name = data['name']
+        if 'firstname' in data:
+            user.firstname = data['firstname']
+        if 'role' in data:
+            user.role = data['role']
+        db.session.commit()
+        return jsonify(user.to_dict()), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+def delete_user(user_id):
+    try:
+        user = User.query.get_or_404(user_id)
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": f"User '{user.username}' deleted successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+def get_user_profile(user_id):
+    try:
+        profile = Profile.query.filter_by(user_id=user_id).first()
+        if profile:
+            return jsonify(profile.to_dict())
+        else:
+            return jsonify({"error": "Profile not found"}), 404
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e.orig)}), 500
+
+def update_user_profile(user_id):
+    data = request.get_json()
+    try:
+        profile = Profile.query.filter_by(user_id=user_id).first()
+        if not profile:
+            return jsonify({"error": "Profile not found"}), 404
+        if 'bio' in data:
+            profile.bio = data['bio']
+        if 'avatar_url' in data:
+            profile.avatar_url = data['avatar_url']
+        if 'website_url' in data:
+            profile.website_url = data['website_url']
+        db.session.commit()
+        return jsonify(profile.to_dict()), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e.orig)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\database\init_db.py
+from app import create_app, db
+from app.models.models import Role
+
+# Create the Flask app instance
+app = create_app()
+
+# Use the app context to initialize the database and add roles
+with app.app_context():
+    # Create all tables
+    db.create_all()
+
+    # Add predefined roles if not already present
+    try:
+        # Use db.session.query explicitly to avoid issues with Role.query
+        if not db.session.query(Role).first():
+            roles = ['Administrator', 'Reviewer', 'End User']
+            for role_name in roles:
+                role = Role(name=role_name)
+                db.session.add(role)
+            db.session.commit()
+            print("Predefined roles added successfully.")
+        else:
+            print("Roles already exist.")
+    except Exception as e:
+        print(f"Error initializing roles: {e}")
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\category.py
+from app import db
+
+class Category(db.Model):
+    __tablename__ = 'categories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), unique=True, nullable=False)
+    description = db.Column(db.Text)
+
+    subcategories = db.relationship('Subcategory', back_populates='category')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description
+        }
+
+    def to_dict_with_subcategories(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'subcategories': [subcategory.to_dict() for subcategory in self.subcategories]
+        }
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\models.py
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from sqlalchemy.dialects.postgresql import JSONB
+
+db = SQLAlchemy()
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+class Category(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
+class Subcategory(db.Model):
+    __tablename__ = 'subcategories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='CASCADE'), nullable=False)
+    category = db.relationship('Category', backref=db.backref('subcategories', cascade='all, delete-orphan'))
+    __table_args__ = (db.UniqueConstraint('name', 'category_id', name='_name_category_uc'),)
+
+class Snippet(db.Model):
+    __tablename__ = 'snippets'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    content = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategories.id'), nullable=False)
+    language = db.Column(db.String(50))
+    is_public = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Tag(db.Model):
+    __tablename__ = 'tags'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    is_approved = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class SnippetTag(db.Model):
+    __tablename__ = 'snippet_tags'
+    snippet_id = db.Column(db.Integer, db.ForeignKey('snippets.id', ondelete='CASCADE'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    snippet_id = db.Column(db.Integer, db.ForeignKey('snippets.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    action = db.Column(db.String(255), nullable=False)
+    details = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class OAuthToken(db.Model):
+    __tablename__ = 'oauth_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    provider = db.Column(db.String(50), nullable=False)
+    token = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class FailedLogin(db.Model):
+    __tablename__ = 'failed_logins'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    attempt_time = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(50))
+
+class Backup(db.Model):
+    __tablename__ = 'backups'
+    id = db.Column(db.Integer, primary_key=True)
+    backup_time = db.Column(db.DateTime, default=datetime.utcnow)
+    backup_file = db.Column(db.String(255), nullable=False)
+
+class AITrainingExport(db.Model):
+    __tablename__ = 'ai_training_exports'
+    id = db.Column(db.Integer, primary_key=True)
+    export_time = db.Column(db.DateTime, default=datetime.utcnow)
+    export_file = db.Column(db.String(255), nullable=False)
+
+# Event listeners for updating timestamps
+@event.listens_for(User, 'before_update')
+@event.listens_for(Snippet, 'before_update')
+def update_timestamp(mapper, connection, target):
+    target.updated_at = datetime.utcnow()
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\notification.py
+from app import db
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    read = db.Column(db.Boolean, default=False)
+
+    # Relationship
+    user = db.relationship('User', backref=db.backref('notifications', lazy=True, cascade="all, delete-orphan"))
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\snippet.py
+from app import db
+
+class Snippet(db.Model):
+    __tablename__ = 'snippets'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategories.id'))
+    public = db.Column(db.Boolean, default=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    language = db.Column(db.String(50), nullable=False)
+
+    # Relationships
+    category = db.relationship('Category', backref=db.backref('snippets', lazy=True))
+    subcategory = db.relationship('Subcategory', backref=db.backref('snippets', lazy=True))
+    user = db.relationship('User', backref=db.backref('snippets', lazy=True))
+    tags = db.relationship('Tag', secondary='snippet_tags', backref=db.backref('snippets', lazy='dynamic'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'content': self.content,
+            'category_id': self.category_id,
+            'subcategory_id': self.subcategory_id,
+            'public': self.public,
+            'user_id': self.user_id,
+            'created_at': self.created_at,
+            'language': self.language
+        }
+
+class Favorite(db.Model):
+    __tablename__ = 'favorites'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    snippet_id = db.Column(db.Integer, db.ForeignKey('snippets.id'), primary_key=True)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('favorites', cascade="all, delete-orphan"))
+    snippet = db.relationship('Snippet', backref=db.backref('favorites', cascade="all, delete-orphan"))
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\subcategory.py
+from app import db
+
+class Subcategory(db.Model):
+    __tablename__ = 'subcategories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+
+    category = db.relationship('Category', back_populates='subcategories')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'category_id': self.category_id,
+            'name': self.name,
+            'description': self.description
+        }
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\tag.py
+from app import db
+
+class Tag(db.Model):
+    __tablename__ = 'tags'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
+class SnippetTag(db.Model):
+    __tablename__ = 'snippet_tags'
+    snippet_id = db.Column(db.Integer, db.ForeignKey('snippets.id'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'), primary_key=True)
+
+    # Relationships
+    snippet = db.relationship('Snippet', backref=db.backref('snippet_tags', cascade="all, delete-orphan"))
+    tag = db.relationship('Tag', backref=db.backref('snippet_tags', cascade="all, delete-orphan"))
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\user.py
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.ext.hybrid import hybrid_property
+from app import db
+from flask_security import UserMixin, RoleMixin
+from sqlalchemy import CheckConstraint
+
+roles_users = db.Table(
+    'roles_users',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'))
+)
+
+class Role(db.Model, RoleMixin):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    _password = db.Column("password", db.String(255), nullable=False)  # Backing column
+    name = db.Column(db.String(255), nullable=False)
+    firstname = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    approved = db.Column(db.Boolean, default=False)
+    active = db.Column(db.Boolean, default=True)
+    confirmed_at = db.Column(db.DateTime())
+    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
+    __table_args__ = (
+        CheckConstraint(role.in_(['Administrator', 'Reviewer', 'End User']), name='check_role'),
+    )
+
+    @hybrid_property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, plaintext_password):
+        self._password = generate_password_hash(plaintext_password)
+
+    def check_password(self, plaintext_password):
+        return check_password_hash(self._password, plaintext_password)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'name': self.name,
+            'firstname': self.firstname,
+            'role': self.role,
+            'created_at': self.created_at,
+            'approved': self.approved,
+            'active': self.active,
+            'confirmed_at': self.confirmed_at
+        }
+
+class Profile(db.Model):
+    __tablename__ = 'profiles'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    bio = db.Column(db.Text)
+    avatar_url = db.Column(db.String(255))
+    website_url = db.Column(db.String(255))
+
+    user = db.relationship('User', backref=db.backref('profile', uselist=False, cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'bio': self.bio,
+            'avatar_url': self.avatar_url,
+            'website_url': self.website_url
+        }
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\models\__init__.py
+from .models import db  # Import the db object
+from .user import User, Role  # Import User and Role models
+from .snippet import Snippet  # Import other models as needed
+from .notification import Notification
+from .category import Category
+from .subcategory import Subcategory
+from .tag import Tag, SnippetTag
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\app\routes\routes.py
+from flask import Blueprint, request, jsonify
+from app import db
+from app.models import User, Snippet
+from app.controllers.auth_controller import auth_bp
+from app.controllers.category_controller import create_category, get_categories, delete_category, update_category
+from app.controllers.subcategory_controller import create_subcategory, get_subcategories, delete_subcategory, get_subcategories_by_category, update_subcategory
+from app.controllers.user_controller import create_user, get_users, get_user, update_user, delete_user, get_user_profile, update_user_profile
+from app.controllers.tag_controller import create_tag, get_tags, update_tag, delete_tag
+from app.controllers.snippet_controller import create_snippet, get_snippets, get_snippet, update_snippet, delete_snippet, associate_tags, get_snippets_by_tag
+from app.controllers.query_controller import query_bp
+
+api = Blueprint('api', __name__)
+
+# Register the authentication blueprint
+api.register_blueprint(auth_bp, url_prefix='/auth')
+
+@api.route('/signup', methods=['POST'])
+def signup():
+    return auth_api.resources['Signup'].dispatch_request()
+
+@api.route('/logout', methods=['GET'])
+def logout():
+    return auth_api.resources['Logout'].dispatch_request()
+
+@api.route('/change_password', methods=['POST'])
+def change_password():
+    return auth_api.resources['ChangePassword'].dispatch_request()
+
+@api.route('/snippets', methods=['GET'])
+def get_snippets():
+    snippets = Snippet.query.all()
+    return jsonify([snippet.to_dict() for snippet in snippets])
+
+@api.route('/snippets/<int:id>', methods=['GET'])
+def get_snippet(id):
+    snippet = Snippet.query.get_or_404(id)
+    return jsonify(snippet.to_dict())
+
+@api.route('/snippets/<int:id>', methods=['PUT'])
+def update_snippet(id):
+    data = request.json
+    snippet = Snippet.query.get_or_404(id)
+    for key, value in data.items():
+        setattr(snippet, key, value)
+    db.session.commit()
+    return jsonify(snippet.to_dict())
+
+@api.route('/snippets/<int:id>', methods=['DELETE'])
+def delete_snippet(id):
+    snippet = Snippet.query.get_or_404(id)
+    db.session.delete(snippet)
+    db.session.commit()
+    return '', 204
+
+# Add the new category routes
+@api.route('/categories', methods=['POST'])
+def create_category_route():
+    return create_category()
+
+@api.route('/categories', methods=['GET'])
+def get_categories_route():
+    return get_categories()
+
+@api.route('/categories/<int:category_id>', methods=['PUT'])
+def update_category_route(category_id):
+    return update_category(category_id)
+
+@api.route('/categories/<int:category_id>', methods=['DELETE'])
+def delete_category_route(category_id):
+    return delete_category(category_id)
+
+# Add the new subcategory routes
+@api.route('/subcategories', methods=['POST'])
+def create_subcategory_route():
+    return create_subcategory()
+
+@api.route('/subcategories/<int:subcategory_id>', methods=['PUT'])
+def update_subcategory_route(subcategory_id):
+    return update_subcategory(subcategory_id)
+
+@api.route('/subcategories/<int:subcategory_id>', methods=['DELETE'])
+def delete_subcategory_route(subcategory_id):
+    return delete_subcategory(subcategory_id)
+
+@api.route('/subcategories', methods=['GET'])
+def get_subcategories_route():
+    return get_subcategories()
+
+@api.route('/categories/<int:category_id>/subcategories', methods=['GET'])
+def get_subcategories_by_category_route(category_id):
+    return get_subcategories_by_category(category_id)
+
+# Add the new user routes
+@api.route('/users', methods=['POST'])
+def create_user_route():
+    return create_user()
+
+@api.route('/users', methods=['GET'])
+def get_users_route():
+    return get_users()
+
+@api.route('/users/<int:user_id>', methods=['GET'])
+def get_user_route(user_id):
+    return get_user(user_id)
+
+@api.route('/users/<int:user_id>', methods=['PUT'])
+def update_user_route(user_id):
+    return update_user(user_id)
+
+@api.route('/users/<int:user_id>', methods=['DELETE'])
+def delete_user_route(user_id):
+    return delete_user(user_id)
+
+@api.route('/users/<int:user_id>/profile', methods=['GET'])
+def get_user_profile_route(user_id):
+    return get_user_profile(user_id)
+
+@api.route('/users/<int:user_id>/profile', methods=['PUT'])
+def update_user_profile_route(user_id):
+    return update_user_profile(user_id)
+
+# Add the new tag routes
+@api.route('/tags', methods=['POST'])
+def create_tag_route():
+    return create_tag()
+
+@api.route('/tags', methods=['GET'])
+def get_tags_route():
+    return get_tags()
+
+@api.route('/tags/<int:tag_id>', methods=['PUT'])
+def update_tag_route(tag_id):
+    return update_tag(tag_id)
+
+@api.route('/tags/<int:tag_id>', methods=['DELETE'])
+def delete_tag_route(tag_id):
+    return delete_tag(tag_id)
+
+@api.route('/tags/<int:tag_id>/snippets', methods=['GET'])
+def get_snippets_by_tag_route(tag_id):
+    return get_snippets_by_tag(tag_id)
+
+
+# Snippet routes
+@api.route('/snippets', methods=['POST'])
+def create_snippet_route():
+    return create_snippet()
+
+@api.route('/snippets', methods=['GET'])
+def get_snippets_route():
+    return get_snippets()
+
+@api.route('/snippets/<int:snippet_id>', methods=['GET'])
+def get_snippet_route(snippet_id):
+    return get_snippet(snippet_id)
+
+@api.route('/snippets/<int:snippet_id>', methods=['PUT'])
+def update_snippet_route(snippet_id):
+    return update_snippet(snippet_id)
+
+@api.route('/snippets/<int:snippet_id>', methods=['DELETE'])
+def delete_snippet_route(snippet_id):
+    return delete_snippet(snippet_id)
+
+@api.route('/snippets/<int:snippet_id>/tags', methods=['POST'])
+def associate_tags_route(snippet_id):
+    return associate_tags(snippet_id)
+
+# Register the query blueprint
+api.register_blueprint(query_bp, url_prefix='/api/query')
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\migrations\env.py
+import logging
+from logging.config import fileConfig
+
+from flask import current_app
+
+from alembic import context
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+fileConfig(config.config_file_name)
+logger = logging.getLogger('alembic.env')
+
+
+def get_engine():
+    try:
+        # this works with Flask-SQLAlchemy<3 and Alchemical
+        return current_app.extensions['migrate'].db.get_engine()
+    except (TypeError, AttributeError):
+        # this works with Flask-SQLAlchemy>=3
+        return current_app.extensions['migrate'].db.engine
+
+
+def get_engine_url():
+    try:
+        return get_engine().url.render_as_string(hide_password=False).replace(
+            '%', '%%')
+    except AttributeError:
+        return str(get_engine().url).replace('%', '%%')
+
+
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+config.set_main_option('sqlalchemy.url', get_engine_url())
+target_db = current_app.extensions['migrate'].db
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
+
+def get_metadata():
+    if hasattr(target_db, 'metadatas'):
+        return target_db.metadatas[None]
+    return target_db.metadata
+
+
+def run_migrations_offline():
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url, target_metadata=get_metadata(), literal_binds=True
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online():
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+
+    # this callback is used to prevent an auto-migration from being generated
+    # when there are no changes to the schema
+    # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
+    def process_revision_directives(context, revision, directives):
+        if getattr(config.cmd_opts, 'autogenerate', False):
+            script = directives[0]
+            if script.upgrade_ops.is_empty():
+                directives[:] = []
+                logger.info('No changes in schema detected.')
+
+    conf_args = current_app.extensions['migrate'].configure_args
+    if conf_args.get("process_revision_directives") is None:
+        conf_args["process_revision_directives"] = process_revision_directives
+
+    connectable = get_engine()
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=get_metadata(),
+            **conf_args
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\migrations\versions\55569e580c1b_manual_initial_migration.py
+"""Manual initial migration
+
+Revision ID: 55569e580c1b
+Revises: 
+Create Date: 2024-07-14 18:48:28.162427
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision = '55569e580c1b'
+down_revision = None
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('roles',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(length=50), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name')
+    )
+    op.create_table('categories',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(length=100), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name')
+    )
+    op.create_table('users',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('email', sa.String(length=255), nullable=False),
+        sa.Column('password_hash', sa.String(length=255), nullable=False),
+        sa.Column('first_name', sa.String(length=100)),
+        sa.Column('last_name', sa.String(length=100)),
+        sa.Column('role_id', sa.Integer(), nullable=False),
+        sa.Column('is_active', sa.Boolean(), default=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp(), onupdate=sa.func.current_timestamp()),
+        sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('email')
+    )
+    op.create_table('subcategories',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(length=100), nullable=False),
+        sa.Column('category_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name', 'category_id', name='_name_category_uc')
+    )
+    op.create_table('snippets',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('title', sa.String(length=255), nullable=False),
+        sa.Column('description', sa.Text()),
+        sa.Column('content', sa.Text(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('category_id', sa.Integer(), nullable=False),
+        sa.Column('subcategory_id', sa.Integer(), nullable=False),
+        sa.Column('language', sa.String(length=50)),
+        sa.Column('is_public', sa.Boolean(), default=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp(), onupdate=sa.func.current_timestamp()),
+        sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
+        sa.ForeignKeyConstraint(['subcategory_id'], ['subcategories.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('tags',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(length=100), nullable=False),
+        sa.Column('is_approved', sa.Boolean(), default=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp(), onupdate=sa.func.current_timestamp()),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name')
+    )
+    op.create_table('snippet_tags',
+        sa.Column('snippet_id', sa.Integer(), nullable=False),
+        sa.Column('tag_id', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['snippet_id'], ['snippets.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['tag_id'], ['tags.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('snippet_id', 'tag_id')
+    )
+    op.create_table('comments',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('snippet_id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('content', sa.Text(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.ForeignKeyConstraint(['snippet_id'], ['snippets.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('audit_logs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('action', sa.String(length=255), nullable=False),
+        sa.Column('details', sa.Text()),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('oauth_tokens',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('provider', sa.String(length=50), nullable=False),
+        sa.Column('token', sa.String(length=255), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('failed_logins',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('attempt_time', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.Column('ip_address', sa.String(length=50)),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('backups',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('backup_time', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.Column('backup_file', sa.String(length=255), nullable=False),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('ai_training_exports',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('export_time', sa.DateTime(), nullable=False, server_default=sa.func.current_timestamp()),
+        sa.Column('export_file', sa.String(length=255), nullable=False),
+        sa.PrimaryKeyConstraint('id')
+    )
+    # ### end Alembic commands ###
+
+
+def downgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('ai_training_exports')
+    op.drop_table('backups')
+    op.drop_table('failed_logins')
+    op.drop_table('oauth_tokens')
+    op.drop_table('audit_logs')
+    op.drop_table('comments')
+    op.drop_table('snippet_tags')
+    op.drop_table('tags')
+    op.drop_table('snippets')
+    op.drop_table('subcategories')
+    op.drop_table('categories')
+    op.drop_table('roles')
+    op.drop_table('users')
+    # ### end Alembic commands ###
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\backend\migrations\versions\bf1e42552369_add_username_column_to_users_table.py
+"""Add username column to users table
+
+Revision ID: bf1e42552369
+Revises: 55569e580c1b
+Create Date: 2024-11-30 16:09:40.833850
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+# revision identifiers, used by Alembic.
+revision = 'bf1e42552369'
+down_revision = '55569e580c1b'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('notifications',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('message', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('read', sa.Boolean(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('profiles',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('bio', sa.Text(), nullable=True),
+    sa.Column('avatar_url', sa.String(length=255), nullable=True),
+    sa.Column('website_url', sa.String(length=255), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('user_id')
+    )
+    op.create_table('roles_users',
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('role_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], )
+    )
+    op.create_table('favorites',
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('snippet_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['snippet_id'], ['snippets.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('user_id', 'snippet_id')
+    )
+    op.drop_table('backups')
+    op.drop_table('oauth_tokens')
+    op.drop_table('audit_logs')
+    op.drop_table('failed_logins')
+    op.drop_table('comments')
+    op.drop_table('ai_training_exports')
+    with op.batch_alter_table('categories', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('description', sa.Text(), nullable=True))
+        batch_op.alter_column('name',
+               existing_type=sa.VARCHAR(length=100),
+               type_=sa.String(length=255),
+               existing_nullable=False)
+
+    with op.batch_alter_table('roles', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('description', sa.String(length=255), nullable=True))
+        batch_op.alter_column('name',
+               existing_type=sa.VARCHAR(length=50),
+               type_=sa.String(length=80),
+               nullable=True)
+
+    with op.batch_alter_table('snippet_tags', schema=None) as batch_op:
+        batch_op.drop_constraint('snippet_tags_snippet_id_fkey', type_='foreignkey')
+        batch_op.drop_constraint('snippet_tags_tag_id_fkey', type_='foreignkey')
+        batch_op.create_foreign_key(None, 'snippets', ['snippet_id'], ['id'])
+        batch_op.create_foreign_key(None, 'tags', ['tag_id'], ['id'])
+
+    with op.batch_alter_table('snippets', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('type', sa.String(length=50), nullable=False))
+        batch_op.add_column(sa.Column('subtype', sa.String(length=50), nullable=False))
+        batch_op.add_column(sa.Column('public', sa.Boolean(), nullable=True))
+        batch_op.alter_column('description',
+               existing_type=sa.TEXT(),
+               nullable=False)
+        batch_op.alter_column('subcategory_id',
+               existing_type=sa.INTEGER(),
+               nullable=True)
+        batch_op.alter_column('created_at',
+               existing_type=postgresql.TIMESTAMP(),
+               nullable=True,
+               existing_server_default=sa.text('CURRENT_TIMESTAMP'))
+        batch_op.alter_column('language',
+               existing_type=sa.VARCHAR(length=50),
+               nullable=False)
+        batch_op.drop_column('updated_at')
+        batch_op.drop_column('is_public')
+
+    with op.batch_alter_table('subcategories', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('description', sa.Text(), nullable=True))
+        batch_op.alter_column('name',
+               existing_type=sa.VARCHAR(length=100),
+               type_=sa.String(length=255),
+               existing_nullable=False)
+        batch_op.drop_constraint('_name_category_uc', type_='unique')
+        batch_op.drop_constraint('subcategories_category_id_fkey', type_='foreignkey')
+        batch_op.create_foreign_key(None, 'categories', ['category_id'], ['id'])
+
+    with op.batch_alter_table('tags', schema=None) as batch_op:
+        batch_op.alter_column('name',
+               existing_type=sa.VARCHAR(length=100),
+               type_=sa.String(length=50),
+               existing_nullable=False)
+        batch_op.drop_column('is_approved')
+        batch_op.drop_column('updated_at')
+        batch_op.drop_column('created_at')
+
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('username', sa.String(length=255), nullable=False))
+        batch_op.add_column(sa.Column('password', sa.String(length=255), nullable=False))
+        batch_op.add_column(sa.Column('name', sa.String(length=255), nullable=False))
+        batch_op.add_column(sa.Column('firstname', sa.String(length=255), nullable=False))
+        batch_op.add_column(sa.Column('role', sa.String(length=50), nullable=False))
+        batch_op.add_column(sa.Column('approved', sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column('active', sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column('confirmed_at', sa.DateTime(), nullable=True))
+        batch_op.alter_column('created_at',
+               existing_type=postgresql.TIMESTAMP(),
+               nullable=True,
+               existing_server_default=sa.text('CURRENT_TIMESTAMP'))
+        batch_op.create_unique_constraint(None, ['username'])
+        batch_op.drop_constraint('users_role_id_fkey', type_='foreignkey')
+        batch_op.drop_column('updated_at')
+        batch_op.drop_column('password_hash')
+        batch_op.drop_column('last_name')
+        batch_op.drop_column('role_id')
+        batch_op.drop_column('is_active')
+        batch_op.drop_column('first_name')
+
+    # ### end Alembic commands ###
+
+
+def downgrade():
+    # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('first_name', sa.VARCHAR(length=100), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('is_active', sa.BOOLEAN(), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('role_id', sa.INTEGER(), autoincrement=False, nullable=False))
+        batch_op.add_column(sa.Column('last_name', sa.VARCHAR(length=100), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('password_hash', sa.VARCHAR(length=255), autoincrement=False, nullable=False))
+        batch_op.add_column(sa.Column('updated_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False))
+        batch_op.create_foreign_key('users_role_id_fkey', 'roles', ['role_id'], ['id'])
+        batch_op.drop_constraint(None, type_='unique')
+        batch_op.alter_column('created_at',
+               existing_type=postgresql.TIMESTAMP(),
+               nullable=False,
+               existing_server_default=sa.text('CURRENT_TIMESTAMP'))
+        batch_op.drop_column('confirmed_at')
+        batch_op.drop_column('active')
+        batch_op.drop_column('approved')
+        batch_op.drop_column('role')
+        batch_op.drop_column('firstname')
+        batch_op.drop_column('name')
+        batch_op.drop_column('password')
+        batch_op.drop_column('username')
+
+    with op.batch_alter_table('tags', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('created_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False))
+        batch_op.add_column(sa.Column('updated_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False))
+        batch_op.add_column(sa.Column('is_approved', sa.BOOLEAN(), autoincrement=False, nullable=True))
+        batch_op.alter_column('name',
+               existing_type=sa.String(length=50),
+               type_=sa.VARCHAR(length=100),
+               existing_nullable=False)
+
+    with op.batch_alter_table('subcategories', schema=None) as batch_op:
+        batch_op.drop_constraint(None, type_='foreignkey')
+        batch_op.create_foreign_key('subcategories_category_id_fkey', 'categories', ['category_id'], ['id'], ondelete='CASCADE')
+        batch_op.create_unique_constraint('_name_category_uc', ['name', 'category_id'])
+        batch_op.alter_column('name',
+               existing_type=sa.String(length=255),
+               type_=sa.VARCHAR(length=100),
+               existing_nullable=False)
+        batch_op.drop_column('description')
+
+    with op.batch_alter_table('snippets', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('is_public', sa.BOOLEAN(), autoincrement=False, nullable=True))
+        batch_op.add_column(sa.Column('updated_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False))
+        batch_op.alter_column('language',
+               existing_type=sa.VARCHAR(length=50),
+               nullable=True)
+        batch_op.alter_column('created_at',
+               existing_type=postgresql.TIMESTAMP(),
+               nullable=False,
+               existing_server_default=sa.text('CURRENT_TIMESTAMP'))
+        batch_op.alter_column('subcategory_id',
+               existing_type=sa.INTEGER(),
+               nullable=False)
+        batch_op.alter_column('description',
+               existing_type=sa.TEXT(),
+               nullable=True)
+        batch_op.drop_column('public')
+        batch_op.drop_column('subtype')
+        batch_op.drop_column('type')
+
+    with op.batch_alter_table('snippet_tags', schema=None) as batch_op:
+        batch_op.drop_constraint(None, type_='foreignkey')
+        batch_op.drop_constraint(None, type_='foreignkey')
+        batch_op.create_foreign_key('snippet_tags_tag_id_fkey', 'tags', ['tag_id'], ['id'], ondelete='CASCADE')
+        batch_op.create_foreign_key('snippet_tags_snippet_id_fkey', 'snippets', ['snippet_id'], ['id'], ondelete='CASCADE')
+
+    with op.batch_alter_table('roles', schema=None) as batch_op:
+        batch_op.alter_column('name',
+               existing_type=sa.String(length=80),
+               type_=sa.VARCHAR(length=50),
+               nullable=False)
+        batch_op.drop_column('description')
+
+    with op.batch_alter_table('categories', schema=None) as batch_op:
+        batch_op.alter_column('name',
+               existing_type=sa.String(length=255),
+               type_=sa.VARCHAR(length=100),
+               existing_nullable=False)
+        batch_op.drop_column('description')
+
+    op.create_table('ai_training_exports',
+    sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+    sa.Column('export_time', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False),
+    sa.Column('export_file', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
+    sa.PrimaryKeyConstraint('id', name='ai_training_exports_pkey')
+    )
+    op.create_table('comments',
+    sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+    sa.Column('snippet_id', sa.INTEGER(), autoincrement=False, nullable=False),
+    sa.Column('user_id', sa.INTEGER(), autoincrement=False, nullable=False),
+    sa.Column('content', sa.TEXT(), autoincrement=False, nullable=False),
+    sa.Column('created_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False),
+    sa.ForeignKeyConstraint(['snippet_id'], ['snippets.id'], name='comments_snippet_id_fkey', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='comments_user_id_fkey'),
+    sa.PrimaryKeyConstraint('id', name='comments_pkey')
+    )
+    op.create_table('failed_logins',
+    sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.INTEGER(), autoincrement=False, nullable=False),
+    sa.Column('attempt_time', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False),
+    sa.Column('ip_address', sa.VARCHAR(length=50), autoincrement=False, nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='failed_logins_user_id_fkey'),
+    sa.PrimaryKeyConstraint('id', name='failed_logins_pkey')
+    )
+    op.create_table('audit_logs',
+    sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.INTEGER(), autoincrement=False, nullable=False),
+    sa.Column('action', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
+    sa.Column('details', sa.TEXT(), autoincrement=False, nullable=True),
+    sa.Column('created_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='audit_logs_user_id_fkey'),
+    sa.PrimaryKeyConstraint('id', name='audit_logs_pkey')
+    )
+    op.create_table('oauth_tokens',
+    sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.INTEGER(), autoincrement=False, nullable=False),
+    sa.Column('provider', sa.VARCHAR(length=50), autoincrement=False, nullable=False),
+    sa.Column('token', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
+    sa.Column('created_at', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='oauth_tokens_user_id_fkey'),
+    sa.PrimaryKeyConstraint('id', name='oauth_tokens_pkey')
+    )
+    op.create_table('backups',
+    sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+    sa.Column('backup_time', postgresql.TIMESTAMP(), server_default=sa.text('CURRENT_TIMESTAMP'), autoincrement=False, nullable=False),
+    sa.Column('backup_file', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
+    sa.PrimaryKeyConstraint('id', name='backups_pkey')
+    )
+    op.drop_table('favorites')
+    op.drop_table('roles_users')
+    op.drop_table('profiles')
+    op.drop_table('notifications')
+    # ### end Alembic commands ###
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\docker-compose - Copy.yml
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: snipset_db
+      POSTGRES_USER: snipset_user
+      POSTGRES_PASSWORD: snipset_your_password
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      FLASK_DEBUG: 1
+      FLASK_APP: app
+      DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin_password
+      RECAPTCHA_SITE_KEY: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      RECAPTCHA_SECRET_KEY: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "8080:80"
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\docker-compose.yml
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: snipset_db
+      POSTGRES_USER: snipset_user
+      POSTGRES_PASSWORD: snipset_your_password
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      FLASK_DEBUG: 1
+      FLASK_APP: app
+      DATABASE_URL: postgresql://snipset_user:snipset_your_password@db:5432/snipset_db
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin_password
+      RECAPTCHA_SITE_KEY: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      RECAPTCHA_SECRET_KEY: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+
+
+**** Here is the content of the file in the path C:\Users\NicolasArgenteAIQOS\OneDrive - AIQOS B.V\Documents\GitHub\SnipSet\README.md
+# SnipSet
+Build a self-hosted snippet manager with user authentication, advanced search, and role-based access control. Manage Snippets and Business Rules with detailed categorization. Features include email/password and Azure SSO authentication. Utilize Docker for containerization, GitHub for version control, and VSCode for development.
+
+
+
