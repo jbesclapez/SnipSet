@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Wait for the database to be ready
-echo "Waiting for PostgreSQL to be available..."
+echo "Waiting  for PostgreSQL to be available..."
 while ! nc -z db 5432; do
   sleep 1
 done
